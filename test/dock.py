@@ -3,13 +3,67 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import math
 
+class ListDock(QDockWidget):
+    def __init__(self, title, parent = None):
+        super().__init__(title, parent)
+
+        self.setMinimumWidth(150)
+        
+        self.listwidget = Listbox(self)
+        self.listwidget.setDragEnabled(True)
+        self.layout_vbox = QVBoxLayout(self.listwidget)
+        self.layout_vbox.setContentsMargins(0,0,0,0)
+        self.setWidget(self.listwidget)
+
+class Listbox(QListWidget):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setDragEnabled(True)
+        
+        item = QListWidgetItem("test item", self)
+        item.setTextAlignment(Qt.AlignHCenter)
+        item.setSizeHint(QSize(80, 115))
+        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled)
+        item.setData(Qt.UserRole + 1, "test item")
+    
+    def startDrag(self, *args, **kwargs):
+        print("DragListbox::startDrag")
+        
+        try:
+            item = self.currentItem()
+            name = item.data(Qt.UserRole + 1)
+            print("dragging item", name, item)
+
+            pixmap = QPixmap(item.data(Qt.UserRole))
+            
+            itemData = QByteArray()
+            dataStream = QDataStream(itemData, QIODevice.WriteOnly)
+            dataStream << pixmap
+            dataStream.writeQString(name)
+            dataStream.writeQString(item.text())
+
+            mimeData = QMimeData()
+            mimeData.setData("text/plain", itemData)
+
+            drag = QDrag(self)
+            drag.setMimeData(mimeData)
+
+            drag.setHotSpot(QPoint(0, 0))
+            drag.setPixmap(pixmap)
+
+            drag.exec_(Qt.MoveAction)
+
+        except Exception as e:
+            pass
+
 class Dock(QDockWidget):
-    def __init__(self, title):
-        super().__init__(title)
+    def __init__(self, title, parent = None):
+        super().__init__(title,parent)
         self.dockwidget = QWidget()
         self.layout_vbox = QVBoxLayout(self.dockwidget)
         self.layout_vbox.setContentsMargins(0,0,0,0)
-
+        
         self.grScene = DockGraph()
 
         self.view = DockView(self.grScene, self)
@@ -31,19 +85,23 @@ class DockView(QGraphicsView):
         self.zoomStep = 1
         self.zoomRange = [0, 10]
 
-    def dropEvent(self, event):
-        
-
-        print("drop")
-
-        if event.mimeData().hasUrls():
-            # 파일이 드롭되었을 때 처리하는 코드 작성
-            print("d")
+    def dragEnterEvent(self, event):
+        print("dragEnter")
+        print(event.mimeData().text())
+        if event.mimeData().hasFormat('text/plain'):
+            print("accept item")
+            event.accept()
+            #event.acceptProposedAction()
         else:
-            # 텍스트 또는 기타 항목이 드롭되었을 때 처리하는 코드 작성
-            print("n")
+            print("ignore item")
+            event.ignore()
+    
+    def dragMoveEvent(self, event):
+        event.accept() if event.mimeData().hasText() else event.ignore()
 
-        event.accept()
+    def dropEvent(self, event):
+        print("drop")
+        print(event.mimeData().text())
 
     def initUI(self):
         self.setRenderHints(QPainter.Antialiasing | QPainter.HighQualityAntialiasing | QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform)

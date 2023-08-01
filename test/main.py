@@ -19,7 +19,8 @@ class MainWindow(QMainWindow):
         dock1 = self.create_dock_widget("dock1", Qt.LeftDockWidgetArea)
         dock2 = self.create_dock_widget("dock2", Qt.RightDockWidgetArea)
         #self.tabifyDockWidget(dock1,dock2)
-        self.create_scene()
+        #self.create_scene()
+        self.create_list_dock_widget("nodelist", Qt.RightDockWidgetArea)
     
     def create_menu(self):
         # Menu
@@ -41,21 +42,23 @@ class MainWindow(QMainWindow):
         self.status = self.statusBar()
         self.status.showMessage("Data loaded and plotted")
 
-    def create_scene(self):
-        scene = QGraphicsScene(self)
-        scene.addText("Hello, world!")
-        view = QGraphicsView(scene)
-        view.show()
-
     def create_dock_widget(self, title, area):
         self.setDockNestingEnabled(True)
-        dock = Dock(title)
+        dock = Dock(title, self)
         #dock = QDockWidget(title,self)
         dock.setAllowedAreas(Qt.LeftDockWidgetArea |
                             Qt.RightDockWidgetArea)
         self.addDockWidget(area, dock)
         return dock
-
+    
+    def create_list_dock_widget(self, title, area):
+        self.setDockNestingEnabled(True)
+        dock = ListDock(title, self)
+        #dock = QDockWidget(title,self)
+        dock.setAllowedAreas(Qt.LeftDockWidgetArea |
+                            Qt.RightDockWidgetArea)
+        self.addDockWidget(area, dock)
+        return dock
 if __name__ == '__main__':
     # Create the Qt Application
     app = QApplication(sys.argv)
